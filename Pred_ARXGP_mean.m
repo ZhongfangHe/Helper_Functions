@@ -3,13 +3,14 @@
 % f(zt) is a Gaussian process with the prior [f_est; f_pred] ~ N(0,[G1 G2';G2 G3];
 % Compute E(ytph|It,xtp1,...,xtph,theta) for h=1,2,...,H.
 
-function ypred = Pred_ARXGP_mean(ylag,xpred,theta,KM,fpm)
+function ypred = Pred_ARXGP_mean(ylag,xpred,theta,KM,resid_var,yy)
 % Inputs:
 %   ylag: a K-by-1 vector of [y_{t-K+1}; y_{t-K+2}; ... ; y_t].
 %   xpred: a H-by-m matrix stacking [x_{t+1}'; x_{t+2}'; ... ; x_{t+H}'].
 %   theta: a (1+K+m)-by-1 vector of model parameters [a,b1,...,bk,c].
 %   KM: a (t-K+H)-by-(t-K+H) covariance matrix of the GP.
-%   fpm: a (t-K)-by-1 vector of posterior mean E(f_{K+1},f_{K+2},...,f_t|It,para).
+%   resid_var: a scalar of the variance of the residual ut.
+%   yy: a (t-K)-by-1 vector of yt-a-b1*ytm1-...-bk*ytmk-xt'*c.
 % Outputs:
 %   ypred: a H-by-1 vector of E(ytph|It,xtp1,...,xtph,para) for h=1,2,...,H.
 
@@ -21,19 +22,21 @@ end
 
 
 %% Compute predictive mean of f_pred
-t = length(fpm)+K;
+t = length(yy)+K;
 G2 = KM(t-K+1:t-K+H,1:t-K);
 G3 = KM(1:t-K,1:t-K); %KM(t-K+1:t-K+H,t-K+1:t-K+H);
 [G3U,G3D,~] = svd(G3);
 G3Ddiag = diag(G3D);
-if min(G3Ddiag) < realmin
-    error("Min singular value < realmin");
-else
-    G3Dinvdiag = 1./G3Ddiag;
-    G3Dinv = diag(G3Dinvdiag);
-    G3inv = G3U * G3Dinv * G3U';
-    f_pred_mean = G2*G3inv*fpm;  
-end
+% if min(G3Ddiag) < realmin%
+%     error("Min singular value < realmin");
+% else
+%     %G3Dinvdiag = 1./G3Ddiag;
+%     %G3Dinv = diag(G3Dinvdiag);
+%     %G3inv = G3U * G3Dinv * G3U';
+%     %f_pred_mean = G2*G3inv*fpm;
+%     f_pred_mean = G2*G3U*diag(1./(resid_var+G3Ddiag))*G3U'*yy;
+% end
+f_pred_mean = G2*G3U*diag(1./(resid_var+G3Ddiag))*G3U'*yy;
 
 
 

@@ -8,8 +8,8 @@ rng(123456789);
 %% Simulated data (DGP = ARX+possible GP)
 ind_SV = 0; %if SV is present
 
-n = 100;
-K = 2;
+n = 35;%40;%50; %100;
+K = 10;%10; %2;
 disp(['n = ', num2str(n), ', K = ', num2str(K)]);
 xex = randn(n, K);
 beta_true = [1; zeros(K-1,1)];
@@ -19,7 +19,7 @@ sig2_rho = 0.9;
 sig2_s = 0.1;
 sig2_true = sig2_mu * ones(n,1);
 
-idx_f = 1; %if nonlinear part is present
+idx_f = 2; %if nonlinear part is present
 switch idx_f
     case 1 %from kernel
         Kcov_true = kernel_cov_matrix(xex(:,2:K));
@@ -140,12 +140,13 @@ for idx_model = 1:nmodel
                 phii = draws.phi(drawi); %para of kernle covariance matrix
                 si = draws.s(drawi); %residual variance
                 KM = (sigmai^2) * (Ktmp.^(phii^2)); %(t-K+H)-by-(t-K+H) covariance matrix of the GP
-                [KMU,KMD,~] = svd(KM(1:nest-nlag,1:nest-nlag));
-                tmpvec = diag(KMD)./(diag(KMD) + si);
-                tmp1 = KMU * diag(tmpvec) * KMU';
+%                 [KMU,KMD,~] = svd(KM(1:nest-nlag,1:nest-nlag));
+%                 tmpvec = diag(KMD)./(diag(KMD) + si);
+%                 tmp1 = KMU * diag(tmpvec) * KMU';
                 tmp2 = yest - xest*theta;
-                fpm = tmp1*tmp2; %(t-K)-by-1 vector of posterior mean E(f_{K+1},f_{K+2},...,f_t|It,para)
-                ypred_drawi = Pred_ARXGP_mean(ylag_pred,xpred,theta,KM,fpm);
+%                 fpm = tmp1*tmp2; %(t-K)-by-1 vector of posterior mean E(f_{K+1},f_{K+2},...,f_t|It,para)
+%                 ypred_drawi = Pred_ARXGP_mean(ylag_pred,xpred,theta,KM,fpm);
+                ypred_drawi = Pred_ARXGP_mean(ylag_pred,xpred,theta,KM,si,tmp2);
                 ypred_tmp = ypred_tmp + ypred_drawi/ndraws;
             end
 
